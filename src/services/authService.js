@@ -1,5 +1,8 @@
-import sheetService from './sheetService';
 import config from '../config/config';
+
+// 🚨 IMPORTANT:
+// We intentionally DO NOT import sheetService in DEV auth mode
+// to guarantee Google Sheets is never touched.
 
 class AuthService {
   constructor() {
@@ -28,9 +31,11 @@ class AuthService {
     }
 
     try {
+      // Save token
       this.token = accessToken;
       sessionStorage.setItem('googleToken', accessToken);
 
+      // Fetch Google profile
       const profileRes = await fetch(
         'https://www.googleapis.com/oauth2/v3/userinfo',
         { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -51,57 +56,43 @@ class AuthService {
         throw new Error('No email found in Google profile');
       }
 
-      if (!email.endsWith('@reyanshelectronics.com') && !config.useLocalStorage) {
-        throw new Error('Only @reyanshelectronics.com users are allowed');
-      }
+      /* ======================================================
+         🔥 DEV AUTH MODE — NO GOOGLE SHEETS, EVER
+         ====================================================== */
 
-      try {
-        await sheetService.init(accessToken);
-      } catch (err) {
-        console.warn('Sheet service init failed:', err);
-      }
+      if (config.useDevAuth === true) {
+        const DEV_ALLOWED_EMAILS = [
+          'gauravdhikale18@gmail.com',
+          'admin@reyanshelectronics.com',
+          'test@reyanshelectronics.com'
+        ];
 
-      // Local / dev mode
-      if (config.useLocalStorage) {
+        if (!DEV_ALLOWED_EMAILS.includes(email)) {
+          throw new Error('Access denied. This account is not approved for DEV access.');
+        }
+
         this.currentUser = {
           email,
-          name: profile.name,
-          role: 'Customer Relations Manager',
+          name: profile.name || 'Dev User',
+          role: 'CEO',
           permissions: 'CRUD',
           imageUrl: profile.picture
         };
+
         sessionStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-        return this.currentUser;
+        return this.currentUser; // ⛔ EXIT — NOTHING BELOW RUNS
       }
 
-      // Production user lookup
-      const users = await sheetService.getSheetData(config.sheets.users);
-      const user = users.find(u => u.Email === email);
+      /* ======================================================
+         🚫 PRODUCTION AUTH (INTENTIONALLY DISABLED FOR NOW)
+         ====================================================== */
 
-   if (!user) {
-  this.currentUser = {
-    email,
-    name: profile.name,
-    role: 'CEO',
-    permissions: 'CRUD',
-    imageUrl: profile.picture
-  };
-  sessionStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-  return this.currentUser;
-}
-
-      this.currentUser = {
-        email,
-        name: profile.name || user.Name || 'User',
-        role: user.Role || 'User',
-        permissions: user.Permissions || 'READ',
-        imageUrl: profile.picture
-      };
-
-      sessionStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-      return this.currentUser;
+      throw new Error(
+        'Production auth is disabled. Enable Sheets-based auth when ready.'
+      );
 
     } catch (err) {
+      console.error('Sign-in error:', err);
       sessionStorage.clear();
       this.currentUser = null;
       this.token = null;
@@ -147,7 +138,7 @@ class AuthService {
 
   async validateToken() {
     const token = this.getToken();
-    if (!token || token === 'mock-token' || config.useLocalStorage) return true;
+    if (!token || token === 'mock-token') return true;
 
     try {
       const res = await fetch(
