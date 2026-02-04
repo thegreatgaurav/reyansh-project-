@@ -48,8 +48,8 @@ class AuthService {
       if (config.useDevAuth === true) {
         const DEV_ALLOWED_EMAILS = [
           'gauravdhikale18@gmail.com',
-          'admin@reyanshelectronics.com',
-          'test@reyanshelectronics.com'
+          'tech@reyanshelectronics.com',
+          'sahilpatil1205@gmail.com'
         ];
 
         if (!DEV_ALLOWED_EMAILS.includes(email)) {
