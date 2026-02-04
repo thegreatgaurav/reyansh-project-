@@ -1,11 +1,26 @@
 const config = {
-  // Google Sheets API configs
-  apiKey: "AIzaSyBeO82LW4iMpj6AijPbNPwN3W0duUwQaaA", // API key from URL
-  spreadsheetId: "1CsUr9qgjMl5bd-1-VzFPKQQrejjtZXuBOP-3nl5Zufw", // Spreadsheet ID
+  // ===============================
+  // GOOGLE / SHEETS (DISABLED IN DEV)
+  // ===============================
+  apiKey: "AIzaSyBeO82LW4iMpj6AijPbNPwN3W0duUwQaaA",
+  spreadsheetId: "1CsUr9qgjMl5bd-1-VzFPKQQrejjtZXuBOP-3nl5Zufw",
 
-  // Feature flags
+  // ===============================
+  // AUTH MODES
+  // ===============================
+
+  // 🔥 DEV AUTH MODE
+  // When true:
+  // - Google OAuth is used
+  // - Sheets are NEVER touched
+  // - Users are auto-created from whitelist
+  useDevAuth: true,
+
+  // Old flag (keep for future mock data if needed)
   useLocalStorage: process.env.REACT_APP_USE_LOCAL_STORAGE === "true",
+};
 
+export default config;
   // Sheet names - IMPORTANT: These sheets must be created in the Google Spreadsheet
   sheets: {
     poMaster: "PO_Master",
