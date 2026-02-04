@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import authService from '../services/authService';
 
 // Create auth context
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 // Auth provider component
 export const AuthProvider = ({ children }) => {
@@ -10,26 +10,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already authenticated and validate token
     const checkAuth = async () => {
       try {
         const currentUser = authService.getCurrentUser();
-        
+
         if (currentUser) {
-          // Validate the token is still valid
           const isTokenValid = await authService.validateToken();
-          
-          if (!isTokenValid) {
+          if (isTokenValid) {
+            setUser(currentUser);
+          } else {
             await authService.signOut();
             setUser(null);
-          } else {
-            setUser(currentUser);
           }
         } else {
           setUser(null);
         }
-      } catch (error) {
-        console.error('Error checking auth:', error);
+      } catch (err) {
+        console.error('Auth check failed:', err);
         setUser(null);
       } finally {
         setLoading(false);
@@ -38,105 +35,81 @@ export const AuthProvider = ({ children }) => {
 
     checkAuth();
 
-    // Set up periodic token validation
-    // Tokens expire after 10 hours, so we check every 9 hours to catch expiration before it happens
-    const tokenCheckInterval = setInterval(async () => {
-      const currentUser = authService.getCurrentUser();
-      if (currentUser) {
+    // Periodic token validation (safe, non-blocking)
+    const interval = setInterval(async () => {
+      try {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser) return;
+
         const isTokenValid = await authService.validateToken();
         if (!isTokenValid) {
           await authService.signOut();
           setUser(null);
-          // Redirect to login with session expired flag
           window.location.href = '/login?session_expired=true';
         }
+      } catch (err) {
+        console.error('Periodic auth validation failed:', err);
       }
-    }, 9 * 60 * 60 * 1000); // Check every 9 hours (32400000ms) - tokens expire after 10 hours
+    }, 9 * 60 * 60 * 1000); // 9 hours
 
-    // Cleanup interval on unmount
-    return () => clearInterval(tokenCheckInterval);
+    return () => clearInterval(interval);
   }, []);
 
-  // Sign in handler
+  // Google OAuth sign-in
   const signIn = async (credential) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const user = await authService.signIn(credential);
-      setUser(user);
-      return user;
-    } catch (error) {
-      console.error('Error signing in:', error);
-      throw error;
+      const authenticatedUser = await authService.signIn(credential);
+      setUser(authenticatedUser);
+      return authenticatedUser;
     } finally {
       setLoading(false);
     }
   };
 
-  // Sign out handler
+  // Sign out
   const signOut = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       await authService.signOut();
-      setUser(null);
-      
-      // Force page reload to ensure complete cleanup and prevent any cached state
-      // This ensures the user will be required to sign in again
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Error signing out:', error);
-      // Even if there's an error, clear the user state and redirect
-      setUser(null);
-      window.location.href = '/login';
     } finally {
+      setUser(null);
       setLoading(false);
+      window.location.href = '/login';
     }
   };
 
-  // Mock login for development
+  // Dev-only helpers (safe, optional)
   const mockLogin = (role) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const user = authService.mockLogin(role);
-      setUser(user);
-      return user;
-    } catch (error) {
-      console.error('Error mock login:', error);
-      throw error;
+      const mockUser = authService.mockLogin(role);
+      setUser(mockUser);
+      return mockUser;
     } finally {
       setLoading(false);
     }
   };
 
-  // Direct login handler
   const directLogin = (email, role = 'CEO') => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const user = authService.directLogin(email, role);
-      setUser(user);
-      return user;
-    } catch (error) {
-      console.error('Error direct login:', error);
-      throw error;
+      const directUser = authService.directLogin(email, role);
+      setUser(directUser);
+      return directUser;
     } finally {
       setLoading(false);
     }
   };
 
-  // Debug OAuth handler
-  const debugOAuth = () => {
-    return authService.debugOAuth();
-  };
-
-  // Context value
   const value = {
     user,
     loading,
+    isAuthenticated: Boolean(user),
     signIn,
     signOut,
     mockLogin,
-    directLogin,
-    debugOAuth,
-    isAuthenticated: !!user
+    directLogin
   };
 
   return (
@@ -146,13 +119,13 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use auth context
+// Hook
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+  return ctx;
 };
 
-export default AuthContext; 
+export default AuthContext;
