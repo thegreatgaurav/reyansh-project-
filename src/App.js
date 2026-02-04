@@ -25,7 +25,6 @@ import FlowManagement from "./components/flowManagement/FlowManagement";
 import MyTasks from "./components/flowManagement/MyTasks";
 import ComingSoon from "./components/common/ComingSoon";
 import PrivateRoute from "./components/auth/PrivateRoute";
-import StorageDebugger from "./components/dev/StorageDebugger";
 import SheetInitializer from "./components/admin/SheetInitializer";
 import SheetsTroubleshooting from "./components/admin/SheetsTroubleshooting";
 import DispatchForm from "./components/dispatch/DispatchForm";
@@ -827,7 +826,6 @@ function App() {
                             <Typography variant="h4" sx={{ mb: 3 }}>
                               Document Storage Debugger
                             </Typography>
-                            <StorageDebugger />
                           </Box>
                         </PrivateRouteComponent>
                       }
