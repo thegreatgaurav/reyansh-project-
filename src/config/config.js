@@ -5,7 +5,7 @@ const config = {
      GOOGLE / SHEETS (DATA ONLY)
      =============================== */
   apiKey: "AIzaSyBeO82LW4iMpj6AijPbNPwN3W0duUwQaaA",
-  spreadsheetId: "1CsUr9qgjMl5bd-1-VzFPKQQrejjtZXuBOP-3nl5Zufw",
+ spreadsheetId: "1xoHK2oFVNhZpMpITr8ZYO5VbE2m9hDm6THTMGprDGKQ",
 
   /* ===============================
      AUTH MODES
